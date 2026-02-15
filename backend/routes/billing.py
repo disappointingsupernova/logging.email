@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy import func
 from lib.database import get_db
-from routes.api import get_current_user, get_user_id
+from lib.utils.auth_helpers import get_current_user, get_user_id
 from lib.services.audit import log_audit
 from lib.utils.cache import cache_get, cache_set, invalidate_tier_cache, invalidate_user_cache
 from models.models import User, Organization, Subscription
