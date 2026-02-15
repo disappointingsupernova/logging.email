@@ -1,0 +1,24 @@
+[Unit]
+Description=logging.email Policy Service
+After=network.target
+
+[Service]
+Type=simple
+User=policy
+Group=policy
+WorkingDirectory=/opt/logging-email/policy-service
+Environment="BACKEND_URL=https://api.logging.email"
+EnvironmentFile=/etc/logging-email/policy.env
+ExecStart=/usr/bin/python3 /opt/logging-email/policy-service/policy_daemon.py
+Restart=always
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/opt/logging-email/policy-service
+
+[Install]
+WantedBy=multi-user.target

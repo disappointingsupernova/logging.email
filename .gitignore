@@ -1,0 +1,43 @@
+# Environment files
+.env
+*.env
+!*.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database
+*.sql.gz
+*.db
+
+# Attachments (local testing)
+attachments/
+
+# Secrets
+*.pem
+*.key
+!*.key.example

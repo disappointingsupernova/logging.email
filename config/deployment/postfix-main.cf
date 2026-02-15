@@ -1,0 +1,54 @@
+# Postfix main.cf for logging.email MX servers
+# Hardened inbound-only configuration
+
+# Basic settings
+myhostname = mx1.logging.email
+mydomain = logging.email
+myorigin = $mydomain
+mydestination = $mydomain
+
+# Network
+inet_interfaces = all
+inet_protocols = ipv4
+
+# Relay restrictions (inbound only, no relay)
+smtpd_relay_restrictions = reject_unauth_destination
+smtpd_recipient_restrictions = 
+    permit_mynetworks,
+    reject_unauth_destination,
+    check_policy_service inet:127.0.0.1:10040
+
+# No local delivery
+local_transport = error:local delivery disabled
+
+# Forward accepted mail to backend
+default_transport = smtp:[api.logging.email]:25
+
+# TLS (inbound)
+smtpd_tls_cert_file = /etc/letsencrypt/live/mx1.logging.email/fullchain.pem
+smtpd_tls_key_file = /etc/letsencrypt/live/mx1.logging.email/privkey.pem
+smtpd_tls_security_level = may
+smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_ciphers = high
+smtpd_tls_mandatory_ciphers = high
+
+# TLS (outbound to backend)
+smtp_tls_security_level = encrypt
+smtp_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtp_tls_ciphers = high
+
+# Message size limits
+message_size_limit = 26214400
+
+# Rate limiting
+smtpd_client_connection_rate_limit = 100
+smtpd_error_sleep_time = 5s
+smtpd_soft_error_limit = 5
+smtpd_hard_error_limit = 10
+
+# Reject invalid
+smtpd_helo_required = yes
+strict_rfc821_envelopes = yes
+
+# Logging
+maillog_file = /var/log/postfix.log

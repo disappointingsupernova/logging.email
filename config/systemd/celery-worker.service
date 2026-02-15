@@ -1,0 +1,17 @@
+[Unit]
+Description=Celery Worker for logging.email
+After=network.target redis.target
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/logging.email/backend
+Environment="PATH=/var/www/logging.email/backend/venv/bin"
+ExecStart=/var/www/logging.email/backend/venv/bin/celery -A celery_app worker --loglevel=info --logfile=/var/log/celery/worker.log --pidfile=/var/run/celery/worker.pid
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

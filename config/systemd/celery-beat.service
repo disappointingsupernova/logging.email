@@ -1,0 +1,16 @@
+[Unit]
+Description=Celery Beat Scheduler for logging.email
+After=network.target redis.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/logging.email/backend
+Environment="PATH=/var/www/logging.email/backend/venv/bin"
+ExecStart=/var/www/logging.email/backend/venv/bin/celery -A celery_app beat --loglevel=info --logfile=/var/log/celery/beat.log --pidfile=/var/run/celery/beat.pid
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

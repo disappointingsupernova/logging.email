@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>logging.email - Email Logging Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: #2c3e50; color: white; padding: 20px 0; margin-bottom: 30px; }
+        header h1 { text-align: center; }
+        .auth-form { background: white; padding: 30px; border-radius: 8px; max-width: 400px; margin: 50px auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .auth-form input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .auth-form button { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .auth-form button:hover { background: #2980b9; }
+        .messages { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .message-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .message-item:hover { background: #f9f9f9; }
+        .message-detail { background: white; padding: 30px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        .addresses { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .address-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .logout { float: right; background: #e74c3c; padding: 8px 16px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .upgrade-btn { background: #27ae60; padding: 10px 20px; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>logging.email</h1>
+            <button class="logout hidden" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Login Form -->
+        <div id="loginForm" class="auth-form">
+            <h2>Login</h2>
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <p style="margin-top: 15px; text-align: center;">
+                Don't have an account? <a href="#" onclick="showRegister()">Register</a>
+            </p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="auth-form hidden">
+            <h2>Register</h2>
+            <input type="email" id="registerEmail" placeholder="Email" required>
+            <input type="password" id="registerPassword" placeholder="Password" required>
+            <button onclick="register()">Register</button>
+            <p style="margin-top: 15px; text-align: center;">
+                Already have an account? <a href="#" onclick="showLogin()">Login</a>
+            </p>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden">
+            <div class="addresses">
+                <h2>Your Email Addresses</h2>
+                <div id="addressList"></div>
+                <button class="upgrade-btn" onclick="upgradeToPaid()">Upgrade to Paid</button>
+            </div>
+
+            <div class="messages">
+                <h2>Messages</h2>
+                <div id="messageList"></div>
+            </div>
+
+            <div id="messageDetail" class="message-detail hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.logging.email';
+        let token = localStorage.getItem('token');
+
+        if (token) {
+            showDashboard();
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                showDashboard();
+            } else {
+                alert('Login failed');
+            }
+        }
+
+        async function register() {
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            const response = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                showDashboard();
+            } else {
+                alert('Registration failed');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            token = null;
+            location.reload();
+        }
+
+        async function showDashboard() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.querySelector('.logout').classList.remove('hidden');
+
+            await loadAddresses();
+            await loadMessages();
+        }
+
+        async function loadAddresses() {
+            const response = await fetch(`${API_URL}/addresses`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const list = document.getElementById('addressList');
+                list.innerHTML = data.addresses.map(addr => 
+                    `<div class="address-item">
+                        <strong>${addr.address}</strong>
+                        ${addr.is_active ? '✓ Active' : '✗ Inactive'}
+                    </div>`
+                ).join('');
+            }
+        }
+
+        async function loadMessages() {
+            const response = await fetch(`${API_URL}/messages`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const list = document.getElementById('messageList');
+                list.innerHTML = data.messages.map(msg => 
+                    `<div class="message-item" onclick="viewMessage(${msg.id})">
+                        <strong>${msg.subject || '(No Subject)'}</strong><br>
+                        From: ${msg.from_address}<br>
+                        To: ${msg.recipient}<br>
+                        <small>${new Date(msg.received_at).toLocaleString('en-GB')}</small>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        async function viewMessage(id) {
+            const response = await fetch(`${API_URL}/messages/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const msg = await response.json();
+                const detail = document.getElementById('messageDetail');
+                detail.classList.remove('hidden');
+                detail.innerHTML = `
+                    <h3>${msg.subject || '(No Subject)'}</h3>
+                    <p><strong>From:</strong> ${msg.from_address}</p>
+                    <p><strong>To:</strong> ${msg.recipient}</p>
+                    <p><strong>Date:</strong> ${new Date(msg.received_at).toLocaleString('en-GB')}</p>
+                    <hr style="margin: 20px 0;">
+                    ${msg.sanitised_html || `<pre>${msg.text_body || '(No content)'}</pre>`}
+                    ${msg.attachments.length > 0 ? `
+                        <hr style="margin: 20px 0;">
+                        <h4>Attachments:</h4>
+                        ${msg.attachments.map(att => 
+                            `<div>${att.filename} (${att.content_type}, ${att.size_bytes} bytes)</div>`
+                        ).join('')}
+                    ` : ''}
+                `;
+            }
+        }
+
+        async function upgradeToPaid() {
+            const response = await fetch(`${API_URL}/billing/create-checkout`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                window.location.href = data.checkout_url;
+            } else {
+                alert('Failed to create checkout session');
+            }
+        }
+    </script>
+</body>
+</html>
