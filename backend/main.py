@@ -5,12 +5,14 @@ from models import Base, engine, SessionLocal
 from models.models import TierLimit
 from routes import policy, ingest, api, billing, admin, monitoring, templates, tokens
 from lib.services.health import check_all_services
+from lib.startup_validation import run_validation
 
 app = FastAPI(title="logging.email API", version="1.0.0")
 
 @app.on_event("startup")
 def startup_event():
     """Initialize database on startup"""
+    run_validation()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
