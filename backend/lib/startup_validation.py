@@ -22,7 +22,10 @@ def validate_config():
     if settings.db_password == "CHANGE_ME":
         errors.append("DB_PASSWORD not configured")
     
-    return len(errors) == 0
+    if errors:
+        raise RuntimeError(f"Configuration errors: {', '.join(errors)}")
+    
+    return True
 
 def check_mysql():
     """Check MySQL connectivity"""
@@ -84,8 +87,7 @@ def run_validation():
     if not check_env_file():
         raise RuntimeError(".env file not found")
     
-    if not validate_config():
-        raise RuntimeError("Configuration validation failed")
+    validate_config()
     
     if not check_mysql():
         raise RuntimeError("MySQL connection failed")
